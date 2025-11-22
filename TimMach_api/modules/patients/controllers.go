@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	db "chidinh/db/sqlc"
 	"chidinh/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // Handler gom dependency cho module patients.
@@ -48,14 +46,14 @@ func (h *Handler) CreatePatient(c *gin.Context) {
 		UserID: userID,
 		Name:   req.Name,
 		Gender: req.Gender,
-		Dob:    pgtype.Date{Time: dobVal, Valid: true},
+		Dob:    toDBDate(dobVal),
 	})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "cannot create patient")
 		return
 	}
 
-	c.JSON(http.StatusCreated, mapPatientResponse(patient, nil))
+	c.JSON(http.StatusCreated, toPatientResponse(toPatientDomain(patient, nil)))
 }
 
 // GET /patients
@@ -93,7 +91,7 @@ func (h *Handler) ListPatients(c *gin.Context) {
 
 	resp := ListPatientsResponse{Patients: make([]PatientResponse, 0, len(items))}
 	for _, p := range items {
-		resp.Patients = append(resp.Patients, mapPatientFromJoinedRow(p))
+		resp.Patients = append(resp.Patients, toPatientResponse(toPatientDomainFromJoined(p)))
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -133,7 +131,7 @@ func (h *Handler) GetPatient(c *gin.Context) {
 		latest = &pred
 	}
 
-	c.JSON(http.StatusOK, mapPatientResponse(patient, latest))
+	c.JSON(http.StatusOK, toPatientResponse(toPatientDomain(patient, latest)))
 }
 
 // PUT/PATCH /patients/:id
@@ -187,21 +185,21 @@ func (h *Handler) UpdatePatient(c *gin.Context) {
 			utils.RespondError(c, http.StatusBadRequest, "dob must be YYYY-MM-DD")
 			return
 		}
-		newDob = pgtype.Date{Time: dob, Valid: true}
+		newDob = toDBDate(dob)
 	}
 
 	updated, err := h.Queries.UpdatePatient(c, db.UpdatePatientParams{
 		ID:     int64(patientID),
 		Name:   newName,
 		Gender: newGender,
-		Dob:    pgtype.Date{Time: newDob.Time, Valid: newDob.Valid},
+		Dob:    newDob,
 	})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "cannot update patient")
 		return
 	}
 
-	c.JSON(http.StatusOK, mapPatientResponse(updated, nil))
+	c.JSON(http.StatusOK, toPatientResponse(toPatientDomain(updated, nil)))
 }
 
 // DELETE /patients/:id
@@ -238,79 +236,4 @@ func (h *Handler) DeletePatient(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
-}
-
-func mapPatientResponse(p db.Patient, latest *db.Prediction) PatientResponse {
-	resp := PatientResponse{
-		ID:        strconv.FormatInt(p.ID, 10),
-		UserID:    p.UserID,
-		Name:      p.Name,
-		Gender:    p.Gender,
-		Dob:       formatDate(p.Dob),
-		CreatedAt: safeTime(p.CreatedAt),
-	}
-	resp.LatestPrediction = mapPredictionSummary(latest)
-	return resp
-}
-
-func mapPatientFromJoinedRow(row db.ListPatientsWithLatestPredictionRow) PatientResponse {
-	summary := mapPredictionSummaryFromJoined(row)
-	return PatientResponse{
-		ID:               strconv.FormatInt(row.ID, 10),
-		UserID:           row.UserID,
-		Name:             row.Name,
-		Gender:           row.Gender,
-		Dob:              formatDate(row.Dob),
-		CreatedAt:        safeTime(row.CreatedAt),
-		LatestPrediction: summary,
-	}
-}
-
-func parseDate(input string) (time.Time, error) {
-	return time.Parse("2006-01-02", input)
-}
-
-func formatDate(d pgtype.Date) string {
-	if !d.Valid {
-		return ""
-	}
-	return d.Time.Format("2006-01-02")
-}
-
-func safeTime(t pgtype.Timestamptz) time.Time {
-	if !t.Valid {
-		return time.Time{}
-	}
-	return t.Time
-}
-
-func mapPredictionSummary(pred *db.Prediction) *PatientPredictionSummary {
-	if pred == nil {
-		return nil
-	}
-	return &PatientPredictionSummary{
-		Probability: pred.Probability,
-		RiskLabel:   pred.RiskLabel,
-		CreatedAt:   safeTime(pred.CreatedAt),
-	}
-}
-
-func mapPredictionSummaryFromJoined(row db.ListPatientsWithLatestPredictionRow) *PatientPredictionSummary {
-	if row.LatestProbability == nil && row.LatestRiskLabel == nil {
-		return nil
-	}
-
-	summary := PatientPredictionSummary{
-		Probability: 0,
-		RiskLabel:   "",
-		CreatedAt:   safeTime(row.LatestPredictionAt),
-	}
-	if row.LatestProbability != nil {
-		summary.Probability = *row.LatestProbability
-	}
-	if row.LatestRiskLabel != nil {
-		summary.RiskLabel = *row.LatestRiskLabel
-	}
-
-	return &summary
 }

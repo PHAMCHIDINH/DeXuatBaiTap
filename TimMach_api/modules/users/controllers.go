@@ -81,7 +81,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, RegisterResponse{
-		User:  mapUserResponse(user),
+		User:  toUserResponse(toUserDomain(user)),
 		Token: token,
 	})
 }
@@ -116,7 +116,7 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, LoginResponse{
 		AccessToken: token,
-		User:        mapUserResponse(user),
+		User:        toUserResponse(toUserDomain(user)),
 	})
 }
 
@@ -138,13 +138,5 @@ func (h *Handler) GetMe(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, mapUserResponse(user))
-}
-
-func mapUserResponse(u db.User) UserResponse {
-	return UserResponse{
-		ID:        u.ID,
-		Email:     u.Email,
-		CreatedAt: u.CreatedAt.Time,
-	}
+	c.JSON(http.StatusOK, toUserResponse(toUserDomain(user)))
 }

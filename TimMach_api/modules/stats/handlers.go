@@ -2,7 +2,6 @@ package stats
 
 import (
 	"net/http"
-	"strings"
 
 	db "chidinh/db/sqlc"
 	"chidinh/utils"
@@ -39,26 +38,5 @@ func (h *Handler) GetStats(c *gin.Context) {
 		return
 	}
 
-	counts := map[string]int64{
-		"low":    0,
-		"medium": 0,
-		"high":   0,
-		"none":   0,
-	}
-	for _, r := range rows {
-		label := strings.ToLower(r.RiskLabel)
-		counts[label] += r.Count
-	}
-
-	resp := StatsResponse{
-		TotalPatients: total,
-		RiskCounts: []RiskCount{
-			{RiskLabel: "high", Count: counts["high"]},
-			{RiskLabel: "medium", Count: counts["medium"]},
-			{RiskLabel: "low", Count: counts["low"]},
-			{RiskLabel: "none", Count: counts["none"]},
-		},
-	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, buildStatsResponse(total, rows))
 }

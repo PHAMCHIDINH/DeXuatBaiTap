@@ -1,18 +1,14 @@
 package exercises
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	db "chidinh/db/sqlc"
-	"chidinh/modules/predictions"
 	"chidinh/utils"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // Handler gom dependencies cho module exercise templates/recommendations.
@@ -57,7 +53,7 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, mapTemplate(template))
+	c.JSON(http.StatusCreated, toTemplateResponse(toTemplateDomain(template)))
 }
 
 // GET /exercise-templates
@@ -74,7 +70,7 @@ func (h *Handler) ListTemplates(c *gin.Context) {
 	}
 	resp := ListTemplatesResponse{Templates: make([]TemplateResponse, 0, len(items))}
 	for _, t := range items {
-		resp.Templates = append(resp.Templates, mapTemplate(t))
+		resp.Templates = append(resp.Templates, toTemplateResponse(toTemplateDomain(t)))
 	}
 	c.JSON(http.StatusOK, resp)
 }
@@ -114,10 +110,7 @@ func (h *Handler) ListRecommendationsByPatient(c *gin.Context) {
 		utils.RespondError(c, http.StatusInternalServerError, "cannot load templates")
 		return
 	}
-	tplByID := make(map[int64]db.ExerciseTemplate, len(templates))
-	for _, t := range templates {
-		tplByID[t.ID] = t
-	}
+	tplByID := indexTemplates(templates)
 
 	items, err := h.Queries.ListExerciseRecommendationsByPatient(c, db.ListExerciseRecommendationsByPatientParams{
 		PatientID: int64(patientID),
@@ -131,71 +124,9 @@ func (h *Handler) ListRecommendationsByPatient(c *gin.Context) {
 
 	resp := ListRecommendationsResponse{Recommendations: make([]RecommendationResponse, 0, len(items))}
 	for _, r := range items {
-		resp.Recommendations = append(resp.Recommendations, mapRecommendation(r, tplByID))
+		rec := toRecommendationDomain(r, tplByID)
+		resp.Recommendations = append(resp.Recommendations, toRecommendationResponse(rec))
 	}
 
 	c.JSON(http.StatusOK, resp)
-}
-
-func mapTemplate(t db.ExerciseTemplate) TemplateResponse {
-	return TemplateResponse{
-		ID:              t.ID,
-		Name:            t.Name,
-		Intensity:       t.Intensity,
-		Description:     t.Description,
-		DurationMin:     t.DurationMin,
-		FreqPerWeek:     t.FreqPerWeek,
-		TargetRiskLevel: t.TargetRiskLevel,
-		Tags:            t.Tags,
-	}
-}
-
-func mapRecommendation(r db.ExerciseRecommendation, tplByID map[int64]db.ExerciseTemplate) RecommendationResponse {
-	var stored predictions.RecommendationPlan
-	if len(r.Plan) > 0 {
-		_ = json.Unmarshal(r.Plan, &stored)
-	}
-
-	planPtr := hydratePlan(stored, tplByID)
-
-	return RecommendationResponse{
-		ID:           r.ID,
-		PatientID:    strconv.FormatInt(r.PatientID, 10),
-		PredictionID: strconv.FormatInt(r.PredictionID, 10),
-		Plan:         planPtr,
-		CreatedAt:    safeTime(r.CreatedAt),
-	}
-}
-
-func safeTime(t pgtype.Timestamptz) time.Time {
-	if !t.Valid {
-		return time.Time{}
-	}
-	return t.Time
-}
-
-func hydratePlan(stored predictions.RecommendationPlan, tplByID map[int64]db.ExerciseTemplate) *predictions.RecommendationPlan {
-	if stored.Summary == "" && len(stored.TemplateIDs) == 0 {
-		return nil
-	}
-
-	resp := predictions.RecommendationPlan{
-		Summary:     stored.Summary,
-		TemplateIDs: stored.TemplateIDs,
-		Items:       []predictions.RecommendationItem{},
-	}
-
-	for _, id := range stored.TemplateIDs {
-		if t, ok := tplByID[id]; ok {
-			resp.Items = append(resp.Items, predictions.RecommendationItem{
-				Name:        t.Name,
-				Intensity:   t.Intensity,
-				DurationMin: int(t.DurationMin),
-				FreqPerWeek: int(t.FreqPerWeek),
-				Notes:       t.Description,
-			})
-		}
-	}
-
-	return &resp
 }

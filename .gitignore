@@ -1,0 +1,97 @@
+# === Go Backend ===
+TimMach_api/bin/
+TimMach_api/dist/
+TimMach_api/tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.a
+*.test
+*.out
+
+# Go specific
+go.sum.bak
+vendor/
+
+# === React/Node Frontend ===
+TimMach_client/node_modules/
+TimMach_client/dist/
+TimMach_client/build/
+TimMach_client/.env.local
+TimMach_client/.env.development.local
+TimMach_client/.env.test.local
+TimMach_client/.env.production.local
+TimMach_client/npm-debug.log*
+TimMach_client/yarn-debug.log*
+TimMach_client/yarn-error.log*
+TimMach_client/.turbo/
+
+# === Python ML Service ===
+ml-python/__pycache__/
+ml-python/*.py[cod]
+ml-python/*$py.class
+ml-python/*.so
+ml-python/.Python
+ml-python/build/
+ml-python/develop-eggs/
+ml-python/dist/
+ml-python/downloads/
+ml-python/eggs/
+ml-python/.eggs/
+ml-python/lib/
+ml-python/lib64/
+ml-python/parts/
+ml-python/sdist/
+ml-python/var/
+ml-python/wheels/
+ml-python/*.egg-info/
+ml-python/.installed.cfg
+ml-python/*.egg
+ml-python/MANIFEST
+ml-python/venv/
+ml-python/.venv/
+ml-python/env/
+
+# === Environment & Secrets ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.aws/
+.ssh/
+
+# === IDE & Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+*.iws
+*.ipr
+
+# === Logs & Temp ===
+*.log
+*.logs
+tmp/
+temp/
+*.tmp
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+.AppleDouble
+.LSOverride
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+*.pid
+
+# === Docker ===
+.dockerignore

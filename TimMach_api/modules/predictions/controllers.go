@@ -68,26 +68,7 @@ func (h *Handler) CreatePrediction(c *gin.Context) {
 		return
 	}
 
-	toInt := func(v *int) int {
-		if v == nil {
-			return 0
-		}
-		return *v
-	}
-
-	mlPayload := MLRequest{
-		AgeYears:    req.AgeYears,
-		Gender:      req.Gender,
-		Height:      req.Height,
-		Weight:      req.Weight,
-		APHi:        req.APHi,
-		APLo:        req.APLo,
-		Cholesterol: req.Cholesterol,
-		Gluc:        req.Gluc,
-		Smoke:       toInt(req.Smoke),
-		Alco:        toInt(req.Alco),
-		Active:      toInt(req.Active),
-	}
+	mlPayload := toMLRequest(req)
 
 	if h.ML == nil {
 		utils.RespondError(c, http.StatusInternalServerError, "ml client is not configured")
@@ -131,7 +112,7 @@ func (h *Handler) CreatePrediction(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, CreatePredictionResponse{
-		Prediction:     mapPredictionResponse(pred),
+		Prediction:     toPredictionResponse(toPredictionDomain(pred)),
 		Recommendation: plan,
 	})
 }
@@ -182,19 +163,8 @@ func (h *Handler) ListPredictions(c *gin.Context) {
 
 	resp := ListPredictionsResponse{Predictions: make([]PredictionResponse, 0, len(items))}
 	for _, p := range items {
-		resp.Predictions = append(resp.Predictions, mapPredictionResponse(p))
+		resp.Predictions = append(resp.Predictions, toPredictionResponse(toPredictionDomain(p)))
 	}
 
 	c.JSON(http.StatusOK, resp)
-}
-
-func mapPredictionResponse(p db.Prediction) PredictionResponse {
-	return PredictionResponse{
-		ID:          strconv.FormatInt(p.ID, 10),
-		PatientID:   strconv.FormatInt(p.PatientID, 10),
-		Probability: p.Probability,
-		RiskLabel:   p.RiskLabel,
-		RawFeatures: p.RawFeatures,
-		CreatedAt:   p.CreatedAt.Time,
-	}
 }
