@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  ml:
+    build:
+      context: ./ml-python
+      dockerfile: dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: heartdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d heartdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  api:
+    build:
+      context: ./TimMach_api
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      DB_URL: postgres://postgres:postgres@db:5432/heartdb?sslmode=disable
+      JWT_SECRET: dev-secret
+      ML_BASE_URL: http://ml:8000
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  db_data:

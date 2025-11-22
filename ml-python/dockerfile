@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+# Thiết lập thư mục làm việc trong container
+WORKDIR /app
+
+# Copy file requirements và cài đặt dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy code và file model vào container (đặt model trong thư mục training để khớp đường dẫn)
+COPY main.py .
+COPY training/heart_disease_model.pkl training/
+
+# Mở port 8000
+EXPOSE 8000
+
+# Lệnh chạy FastAPI bằng uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

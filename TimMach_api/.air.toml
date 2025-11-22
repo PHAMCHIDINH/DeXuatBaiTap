@@ -1,0 +1,24 @@
+# Air config for hot-reload
+root = "."
+tmp_dir = "./tmp"
+
+[build]
+  # Windows cần .exe, dùng path này để Air không báo lỗi CMD
+  cmd = "go build -o ./tmp/main.exe ."
+  bin = "./tmp/main.exe"
+  full_bin = ""
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "db/sqlc"]
+  include_dir = ["."]
+  follow_symlink = true
+  dir = "."
+
+[log]
+  time = true
+
+[color]
+  main = "yellow"
+  watcher = "cyan"
+  build = "green"
+  runner = "magenta"
+  app = "white"
