@@ -1,7 +1,7 @@
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { formatDate } from '../../../utils/format';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../auth/useAuth';
 
 function ProfilePage() {
   const { user, refreshProfile } = useAuth();

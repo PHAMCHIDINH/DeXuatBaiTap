@@ -1,14 +1,22 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { formatDate } from '../../../utils/format';
-import { usePatientsList } from '../../patients/hooks/usePatients';
-import { useStats } from '../../stats/hooks/useStats';
+import { listPatients } from '../../patients/api';
+import { PatientResponse } from '../../patients/types';
+import { getStats } from '../../stats/api';
+import { StatsResponse } from '../../stats/types';
 
 function DashboardPage() {
-  const { data, isLoading } = usePatientsList({ limit: 5 });
-  const { data: stats, isLoading: statsLoading } = useStats();
-  const recentPatients = data?.patients ?? [];
+  const { data: recentPatients = [], isLoading } = useQuery<PatientResponse[]>({
+    queryKey: ['patients', 5, 0, null],
+    queryFn: () => listPatients({ limit: 5 }),
+  });
+  const { data: stats, isLoading: statsLoading } = useQuery<StatsResponse>({
+    queryKey: ['stats'],
+    queryFn: getStats,
+  });
   const riskCounts = stats?.risk_counts ?? [];
 
   return (

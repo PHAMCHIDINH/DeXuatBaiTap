@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
+import { useAuth } from '../../modules/auth/useAuth';
 import { Button } from '../ui/Button';
 import { cn } from '../../utils/cn';
 

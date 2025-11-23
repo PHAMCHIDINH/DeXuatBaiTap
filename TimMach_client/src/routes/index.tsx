@@ -1,16 +1,12 @@
+import type { RouteObject } from 'react-router-dom';
 import { Navigate, Outlet, createBrowserRouter } from 'react-router-dom';
 import App from '../App';
-import { useAuth } from '../modules/auth/hooks/useAuth';
-import LoginPage from '../modules/auth/pages/LoginPage';
-import RegisterPage from '../modules/auth/pages/RegisterPage';
-import DashboardPage from '../modules/dashboard/pages/DashboardPage';
-import PatientDetailPage from '../modules/patients/pages/PatientDetailPage';
-import PatientFormPage from '../modules/patients/pages/PatientFormPage';
-import PatientHistoryPage from '../modules/patients/pages/PatientHistoryPage';
-import PatientPredictPage from '../modules/patients/pages/PatientPredictPage';
-import PatientsListPage from '../modules/patients/pages/PatientsListPage';
-import TemplatesPage from '../modules/exercises/pages/TemplatesPage';
-import ProfilePage from '../modules/users/pages/ProfilePage';
+import { useAuth } from '../modules/auth/useAuth';
+import { authRoutes } from '../modules/auth/routes';
+import { dashboardRoutes } from '../modules/dashboard/routes';
+import { exerciseRoutes } from '../modules/exercises/routes';
+import { patientRoutes } from '../modules/patients/routes';
+import { userRoutes } from '../modules/users/routes';
 
 function ProtectedShell() {
   const { token, loading } = useAuth();
@@ -35,23 +31,15 @@ export const router = createBrowserRouter([
     element: <ProtectedShell />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: 'dashboard', element: <DashboardPage /> },
-      { path: 'patients', element: <PatientsListPage /> },
-      { path: 'patients/new', element: <PatientFormPage mode="create" /> },
-      { path: 'patients/:id', element: <PatientDetailPage /> },
-      { path: 'patients/:id/edit', element: <PatientFormPage mode="edit" /> },
-      { path: 'patients/:id/predict', element: <PatientPredictPage /> },
-      { path: 'patients/:id/history', element: <PatientHistoryPage /> },
-      { path: 'profile', element: <ProfilePage /> },
-      { path: 'exercises/templates', element: <TemplatesPage /> },
-    ],
+      ...dashboardRoutes(),
+      ...patientRoutes(),
+      ...userRoutes(),
+      ...exerciseRoutes(),
+    ] as RouteObject[],
   },
   {
     element: <AuthLayout />,
-    children: [
-      { path: '/login', element: <LoginPage /> },
-      { path: '/register', element: <RegisterPage /> },
-    ],
+    children: authRoutes(),
   },
   { path: '*', element: <Navigate to="/dashboard" replace /> },
 ]);

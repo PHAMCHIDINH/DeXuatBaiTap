@@ -1,15 +1,9 @@
 import client from '../../api/client';
-import {
-  CreatePatientRequest,
-  ListPatientsParams,
-  ListPatientsResponse,
-  PatientResponse,
-  UpdatePatientRequest,
-} from '../../types/api';
+import { CreatePatientRequest, ListPatientsParams, PatientResponse, UpdatePatientRequest } from './types';
 
-export async function listPatients(params: ListPatientsParams): Promise<ListPatientsResponse> {
-  const { data } = await client.get<ListPatientsResponse>('/patients', { params });
-  return data;
+export async function listPatients(params: ListPatientsParams): Promise<PatientResponse[]> {
+  const { data } = await client.get<{ patients: PatientResponse[] }>('/patients', { params });
+  return data.patients;
 }
 
 export async function getPatient(id: string): Promise<PatientResponse> {

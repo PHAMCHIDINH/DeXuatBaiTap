@@ -1,8 +1,10 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { PatientForm } from '../components/PatientForm';
-import { useCreatePatient, usePatient, useUpdatePatient } from '../hooks/usePatients';
+import { createPatient, getPatient, updatePatient } from '../api';
+import { CreatePatientRequest, PatientResponse, UpdatePatientRequest } from '../types';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -12,9 +14,31 @@ function PatientFormPage({ mode }: Props) {
   const { id } = useParams<{ id: string }>();
   const patientId = id ?? '';
   const navigate = useNavigate();
-  const createMutation = useCreatePatient();
-  const updateMutation = useUpdatePatient(patientId);
-  const { data: patient, isLoading } = usePatient(mode === 'edit' ? id : undefined);
+  const qc = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: (payload: CreatePatientRequest) => createPatient(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: (payload: UpdatePatientRequest) => {
+      if (!patientId) throw new Error('Missing patient id');
+      return updatePatient(patientId, payload);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patients'] });
+      qc.invalidateQueries({ queryKey: ['patient', patientId] });
+    },
+  });
+  const { data: patient, isLoading } = useQuery<PatientResponse>({
+    queryKey: ['patient', patientId],
+    queryFn: () => {
+      if (!patientId) throw new Error('Missing patient id');
+      return getPatient(patientId);
+    },
+    enabled: mode === 'edit' && !!patientId,
+  });
 
   const isEdit = mode === 'edit';
 

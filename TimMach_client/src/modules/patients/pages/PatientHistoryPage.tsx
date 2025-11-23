@@ -1,19 +1,42 @@
+import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { RecommendationsList } from '../../exercises/components/RecommendationsList';
-import { useRecommendations } from '../../exercises/hooks/useExercises';
+import { listRecommendations } from '../../exercises/api';
 import { PredictionChart } from '../../predictions/components/PredictionChart';
 import { PredictionHistoryTable } from '../../predictions/components/PredictionHistoryTable';
-import { usePredictions } from '../../predictions/hooks/usePredictions';
-import { usePatient } from '../hooks/usePatients';
+import { listPredictions } from '../../predictions/api';
+import { getPatient } from '../api';
+import { PatientResponse } from '../types';
+import { RecommendationResponse } from '../../exercises/types';
+import { PredictionResponse } from '../../predictions/types';
 
 function PatientHistoryPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: patient } = usePatient(id);
-  const { data, isLoading } = usePredictions(id, { limit: 50 });
-  const predictions = data?.predictions ?? [];
-  const { data: recs, isLoading: recLoading } = useRecommendations(id, { limit: 20 });
-  const recommendations = recs?.recommendations ?? [];
+  const { data: patient } = useQuery<PatientResponse>({
+    queryKey: ['patient', id],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return getPatient(id);
+    },
+    enabled: !!id,
+  });
+  const { data: predictions = [], isLoading } = useQuery<PredictionResponse[]>({
+    queryKey: ['predictions', id, 50],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return listPredictions(id, { limit: 50 });
+    },
+    enabled: !!id,
+  });
+  const { data: recommendations = [], isLoading: recLoading } = useQuery<RecommendationResponse[]>({
+    queryKey: ['exercise-recommendations', id, 20],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return listRecommendations(id, { limit: 20 });
+    },
+    enabled: !!id,
+  });
 
   if (!id) return <p className="text-sm text-red-600">Thiếu patient id.</p>;
 

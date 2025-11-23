@@ -1,5 +1,5 @@
-import { TemplateResponse } from '../../../types/api';
 import { Card } from '../../../components/ui/Card';
+import { TemplateResponse } from '../types';
 
 interface Props {
   templates: TemplateResponse[];

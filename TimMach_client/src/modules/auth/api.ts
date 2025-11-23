@@ -1,5 +1,5 @@
 import client from '../../api/client';
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '../../types/api';
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from './types';
 
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const { data } = await client.post<LoginResponse>('/users/login', payload);

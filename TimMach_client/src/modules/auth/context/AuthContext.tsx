@@ -2,7 +2,8 @@ import axios from 'axios';
 import { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
 import * as authApi from '../api';
 import { me } from '../../users/api';
-import { LoginRequest, RegisterRequest, User } from '../../../types/api';
+import { LoginRequest, RegisterRequest } from '../types';
+import { User } from '../../users/types';
 import { clearToken, getToken as readToken, setToken as storeToken } from '../../../utils/storage';
 import { setAuthToken } from '../../../api/client';
 

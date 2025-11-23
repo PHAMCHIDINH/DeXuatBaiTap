@@ -1,6 +1,6 @@
-import { RecommendationResponse } from '../../../types/api';
 import { Card } from '../../../components/ui/Card';
 import { formatDate } from '../../../utils/format';
+import { RecommendationResponse } from '../types';
 
 interface Props {
   recommendations: RecommendationResponse[];

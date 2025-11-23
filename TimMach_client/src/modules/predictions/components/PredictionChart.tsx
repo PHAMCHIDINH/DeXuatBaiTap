@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { PredictionResponse } from '../../../types/api';
+import { PredictionResponse } from '../types';
 import { formatPercent } from '../../../utils/format';
 
 interface Props {

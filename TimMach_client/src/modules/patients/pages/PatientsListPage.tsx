@@ -1,8 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { PatientsTable } from '../components/PatientsTable';
-import { usePatientsList } from '../hooks/usePatients';
+import { listPatients } from '../api';
+import { PatientResponse, ListPatientsParams } from '../types';
 
 function parseNumber(value: string | null, fallback: number) {
   const n = value ? Number(value) : NaN;
@@ -23,8 +25,11 @@ function PatientsListPage() {
   const offset = parseNumber(params.get('offset'), 0);
   const risk = parseRisk(params.get('risk'));
 
-  const { data, isLoading } = usePatientsList({ limit, offset, risk });
-  const patients = data?.patients ?? [];
+  const queryParams: ListPatientsParams = { limit, offset, risk };
+  const { data: patients = [], isLoading } = useQuery<PatientResponse[]>({
+    queryKey: ['patients', limit, offset, risk ?? null],
+    queryFn: () => listPatients(queryParams),
+  });
 
   const nextPage = () => setParams({ limit: String(limit), offset: String(offset + limit), risk: risk ?? '' });
   const prevPage = () =>

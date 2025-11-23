@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '../../utils/cn';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
+import { useAuth } from '../../modules/auth/useAuth';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard' },

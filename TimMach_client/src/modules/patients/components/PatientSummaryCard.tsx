@@ -1,4 +1,4 @@
-import { PatientResponse } from '../../../types/api';
+import { PatientResponse } from '../types';
 import { Card } from '../../../components/ui/Card';
 import { formatDate } from '../../../utils/format';
 

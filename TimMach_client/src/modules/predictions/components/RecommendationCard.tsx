@@ -1,4 +1,4 @@
-import { RecommendationPlan } from '../../../types/api';
+import { RecommendationPlan } from '../../exercises/types';
 import { Card } from '../../../components/ui/Card';
 
 interface Props {

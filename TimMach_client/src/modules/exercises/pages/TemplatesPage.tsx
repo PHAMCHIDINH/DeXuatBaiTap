@@ -1,12 +1,22 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card } from '../../../components/ui/Card';
+import { createTemplate, listTemplates } from '../api';
 import { TemplatesForm } from '../components/TemplatesForm';
 import { TemplatesTable } from '../components/TemplatesTable';
-import { useCreateTemplate, useTemplates } from '../hooks/useExercises';
-import { Card } from '../../../components/ui/Card';
+import { TemplateResponse, CreateTemplateRequest } from '../types';
 
 function TemplatesPage() {
-  const { data, isLoading } = useTemplates();
-  const createMutation = useCreateTemplate();
-  const templates = data?.templates ?? [];
+  const qc = useQueryClient();
+  const { data: templates = [], isLoading } = useQuery<TemplateResponse[]>({
+    queryKey: ['exercise-templates'],
+    queryFn: listTemplates,
+  });
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateTemplateRequest) => createTemplate(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['exercise-templates'] });
+    },
+  });
 
   return (
     <div className="space-y-4">

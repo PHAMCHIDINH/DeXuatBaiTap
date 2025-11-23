@@ -2,10 +2,9 @@ import client from '../../api/client';
 import {
   CreatePredictionRequest,
   ListPredictionsParams,
-  ListPredictionsResponse,
   CreatePredictionResponse,
   PredictionResponse,
-} from '../../types/api';
+} from './types';
 
 export async function createPrediction(
   patientId: string,
@@ -18,7 +17,10 @@ export async function createPrediction(
 export async function listPredictions(
   patientId: string,
   params: ListPredictionsParams,
-): Promise<ListPredictionsResponse> {
-  const { data } = await client.get<ListPredictionsResponse>(`/patients/${patientId}/predictions`, { params });
-  return data;
+): Promise<PredictionResponse[]> {
+  const { data } = await client.get<{ predictions: PredictionResponse[] }>(
+    `/patients/${patientId}/predictions`,
+    { params },
+  );
+  return data.predictions;
 }

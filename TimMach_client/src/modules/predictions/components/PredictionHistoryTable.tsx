@@ -1,4 +1,4 @@
-import { PredictionResponse } from '../../../types/api';
+import { PredictionResponse } from '../types';
 import { formatDate, formatPercent } from '../../../utils/format';
 import { Badge } from '../../../components/ui/Badge';
 

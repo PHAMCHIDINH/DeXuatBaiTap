@@ -1,14 +1,9 @@
 import client from '../../api/client';
-import {
-  ListTemplatesResponse,
-  CreateTemplateRequest,
-  TemplateResponse,
-  ListRecommendationsResponse,
-} from '../../types/api';
+import { CreateTemplateRequest, TemplateResponse, RecommendationResponse } from './types';
 
-export async function listTemplates(): Promise<ListTemplatesResponse> {
-  const { data } = await client.get<ListTemplatesResponse>('/exercise-templates');
-  return data;
+export async function listTemplates(): Promise<TemplateResponse[]> {
+  const { data } = await client.get<{ templates: TemplateResponse[] }>('/exercise-templates');
+  return data.templates;
 }
 
 export async function createTemplate(payload: CreateTemplateRequest): Promise<TemplateResponse> {
@@ -19,9 +14,10 @@ export async function createTemplate(payload: CreateTemplateRequest): Promise<Te
 export async function listRecommendations(
   patientId: string,
   params?: { limit?: number; offset?: number },
-): Promise<ListRecommendationsResponse> {
-  const { data } = await client.get<ListRecommendationsResponse>(`/patients/${patientId}/recommendations`, {
-    params,
-  });
-  return data;
+): Promise<RecommendationResponse[]> {
+  const { data } = await client.get<{ recommendations: RecommendationResponse[] }>(
+    `/patients/${patientId}/recommendations`,
+    { params },
+  );
+  return data.recommendations;
 }

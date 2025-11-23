@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { PatientResponse } from '../../../types/api';
+import { PatientResponse } from '../types';
 import { formatDate } from '../../../utils/format';
 import { Badge } from '../../../components/ui/Badge';
 

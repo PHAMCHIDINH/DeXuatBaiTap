@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { PredictForm } from '../../predictions/components/PredictForm';
 import { PredictionResultCard } from '../../predictions/components/PredictionResultCard';
 import { RecommendationCard } from '../../predictions/components/RecommendationCard';
-import { useCreatePrediction } from '../../predictions/hooks/usePredictions';
-import { CreatePredictionRequest, CreatePredictionResponse } from '../../../types/api';
-import { usePatient } from '../hooks/usePatients';
+import { createPrediction } from '../../predictions/api';
+import { CreatePredictionRequest, CreatePredictionResponse } from '../../predictions/types';
+import { getPatient } from '../api';
+import { PatientResponse } from '../types';
 
 function ageFromDob(dob?: string) {
   if (!dob) return undefined;
@@ -20,9 +22,22 @@ function ageFromDob(dob?: string) {
 function PatientPredictPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: patient, isLoading } = usePatient(id);
   const patientId = id ?? '';
-  const mutation = useCreatePrediction(patientId);
+  const qc = useQueryClient();
+  const { data: patient, isLoading } = useQuery<PatientResponse>({
+    queryKey: ['patient', patientId],
+    queryFn: () => {
+      if (!patientId) throw new Error('Missing patient id');
+      return getPatient(patientId);
+    },
+    enabled: !!patientId,
+  });
+  const mutation = useMutation({
+    mutationFn: (payload: CreatePredictionRequest) => createPrediction(patientId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['predictions', patientId] });
+    },
+  });
   const [result, setResult] = useState<CreatePredictionResponse | null>(null);
 
   const defaultAge = useMemo(() => ageFromDob(patient?.dob), [patient?.dob]);

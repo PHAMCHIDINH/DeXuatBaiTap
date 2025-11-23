@@ -1,22 +1,46 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { downloadPatientReport } from '../api';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { RecommendationsList } from '../../exercises/components/RecommendationsList';
-import { useRecommendations } from '../../exercises/hooks/useExercises';
 import { PredictionResultCard } from '../../predictions/components/PredictionResultCard';
-import { useLatestPrediction } from '../../predictions/hooks/usePredictions';
+import { listPredictions } from '../../predictions/api';
 import { PatientSummaryCard } from '../components/PatientSummaryCard';
-import { usePatient } from '../hooks/usePatients';
+import { listRecommendations } from '../../exercises/api';
+import { getPatient } from '../api';
+import { PatientResponse } from '../types';
+import { PredictionResponse } from '../../predictions/types';
+import { RecommendationResponse } from '../../exercises/types';
 
 function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: patient, isLoading } = usePatient(id);
-  const { data: latest } = useLatestPrediction(id);
-  const lastPred = latest?.predictions?.[0];
-  const { data: recs, isLoading: recLoading } = useRecommendations(id, { limit: 5 });
-  const recommendations = recs?.recommendations ?? [];
+  const { data: patient, isLoading } = useQuery<PatientResponse>({
+    queryKey: ['patient', id],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return getPatient(id);
+    },
+    enabled: !!id,
+  });
+  const { data: latestPredictions } = useQuery<PredictionResponse[]>({
+    queryKey: ['predictions', id, 1],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return listPredictions(id, { limit: 1 });
+    },
+    enabled: !!id,
+  });
+  const lastPred = latestPredictions?.[0];
+  const { data: recommendations = [], isLoading: recLoading } = useQuery<RecommendationResponse[]>({
+    queryKey: ['exercise-recommendations', id, 5],
+    queryFn: () => {
+      if (!id) throw new Error('Missing patient id');
+      return listRecommendations(id, { limit: 5 });
+    },
+    enabled: !!id,
+  });
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
