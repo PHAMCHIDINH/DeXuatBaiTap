@@ -1,16 +1,16 @@
 import { Navigate, Outlet, createBrowserRouter } from 'react-router-dom';
 import App from '../App';
-import { useAuth } from '../hooks/useAuth';
-import LoginPage from '../pages/auth/LoginPage';
-import RegisterPage from '../pages/auth/RegisterPage';
-import DashboardPage from '../pages/dashboard/DashboardPage';
-import PatientsListPage from '../pages/patients/PatientsListPage';
-import PatientDetailPage from '../pages/patients/PatientDetailPage';
-import PatientFormPage from '../pages/patients/PatientFormPage';
-import PatientPredictPage from '../pages/patients/PatientPredictPage';
-import PatientHistoryPage from '../pages/patients/PatientHistoryPage';
-import ProfilePage from '../pages/profile/ProfilePage';
-import TemplatesPage from '../pages/exercises/TemplatesPage';
+import { useAuth } from '../modules/auth/hooks/useAuth';
+import LoginPage from '../modules/auth/pages/LoginPage';
+import RegisterPage from '../modules/auth/pages/RegisterPage';
+import DashboardPage from '../modules/dashboard/pages/DashboardPage';
+import PatientDetailPage from '../modules/patients/pages/PatientDetailPage';
+import PatientFormPage from '../modules/patients/pages/PatientFormPage';
+import PatientHistoryPage from '../modules/patients/pages/PatientHistoryPage';
+import PatientPredictPage from '../modules/patients/pages/PatientPredictPage';
+import PatientsListPage from '../modules/patients/pages/PatientsListPage';
+import TemplatesPage from '../modules/exercises/pages/TemplatesPage';
+import ProfilePage from '../modules/users/pages/ProfilePage';
 
 function ProtectedShell() {
   const { token, loading } = useAuth();
