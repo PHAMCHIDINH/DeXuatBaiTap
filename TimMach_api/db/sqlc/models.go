@@ -43,6 +43,16 @@ type Prediction struct {
 	RiskLabel   string             `json:"risk_label"`
 	RawFeatures []byte             `json:"raw_features"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Factors     []byte             `json:"factors"`
+}
+
+type Report struct {
+	ID         int64              `json:"id"`
+	PatientID  int64              `json:"patient_id"`
+	Filename   string             `json:"filename"`
+	FileUrl    string             `json:"file_url"`
+	Recipients []byte             `json:"recipients"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {

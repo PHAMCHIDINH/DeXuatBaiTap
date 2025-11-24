@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 import traceback
+from typing import List, Optional
 
 app = FastAPI(
     title="Heart Disease Risk Prediction API",
@@ -47,10 +48,18 @@ class HeartInput(BaseModel):
     active: int = Field(..., ge=0, le=1, example=1)
 
 
+class RiskFactor(BaseModel):
+    field: str
+    status: str
+    message: str
+    contribution: Optional[float] = None
+
+
 class HeartPrediction(BaseModel):
     probability: float
     label: int
     risk_level: str
+    factors: List[RiskFactor] = []
 
 
 @app.get("/health")
@@ -72,6 +81,7 @@ def predict_heart_disease(data: HeartInput):
     - probability: Xác suất (0-1) bị bệnh (cardio=1)
     - label: 0 hoặc 1
     - risk_level: low / medium / high
+    - factors: Danh sách các yếu tố nguy cơ kèm mô tả
     """
     if model is None:
         raise HTTPException(status_code=500, detail="Model chưa được load. Kiểm tra lại file heart_disease_model.pkl")
@@ -125,10 +135,27 @@ def predict_heart_disease(data: HeartInput):
         else:
             risk_level = "high"
 
+        factors = []
+        if input_dict["cholesterol"] >= 3:
+            factors.append(RiskFactor(field="cholesterol", status="high", message="Cholesterol cao (>= 3)"))
+        if input_dict["gluc"] >= 3:
+            factors.append(RiskFactor(field="gluc", status="high", message="Đường huyết cao (>= 3)"))
+        if input_dict["ap_hi"] > 140 or input_dict["ap_lo"] > 90:
+            factors.append(RiskFactor(field="blood_pressure", status="high", message="Huyết áp cao (>140/90)"))
+        if bmi >= 30:
+            factors.append(RiskFactor(field="bmi", status="high", message="BMI cao (>= 30)"))
+        if input_dict["smoke"] == 1:
+            factors.append(RiskFactor(field="smoke", status="yes", message="Hút thuốc"))
+        if input_dict["alco"] == 1:
+            factors.append(RiskFactor(field="alco", status="yes", message="Uống rượu"))
+        if input_dict["active"] == 0:
+            factors.append(RiskFactor(field="active", status="low", message="Ít vận động"))
+
         return HeartPrediction(
             probability=float(round(proba, 4)),
             label=label,
-            risk_level=risk_level
+            risk_level=risk_level,
+            factors=factors,
         )
 
     except HTTPException:

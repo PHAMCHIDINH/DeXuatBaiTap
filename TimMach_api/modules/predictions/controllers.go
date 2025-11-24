@@ -7,34 +7,31 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	db "chidinh/db/sqlc"
 	"chidinh/utils"
+	"chidinh/utils/httpclient"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 	"github.com/jackc/pgx/v5"
 )
 
-// MLClient định nghĩa cách gọi sang service FastAPI.
-type MLClient interface {
-	Predict(ctx context.Context, payload MLRequest) (MLResponse, error)
-}
-
-// Handler gom dependency cho module predictions.
-type Handler struct {
+// Controller gom dependency cho module predictions.
+type Controller struct {
 	Queries *db.Queries
-	ML      MLClient
+	MLHTTP  *resty.Client
 }
 
-func NewHandler(queries *db.Queries, ml MLClient) *Handler {
-	return &Handler{
-		Queries: queries,
-		ML:      ml,
-	}
+// NewController khởi tạo controller với DB queries và HTTP client gọi ML.
+func NewController(queries *db.Queries, mlHTTP *resty.Client) *Controller {
+	return &Controller{Queries: queries, MLHTTP: mlHTTP}
 }
 
 // POST /patients/:id/predict
-func (h *Handler) CreatePrediction(c *gin.Context) {
+// Nhận input từ client -> gửi ML -> lưu prediction + factors -> trả kết quả và recommendation.
+func (h *Controller) CreatePrediction(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -70,24 +67,26 @@ func (h *Handler) CreatePrediction(c *gin.Context) {
 
 	mlPayload := toMLRequest(req)
 
-	if h.ML == nil {
+	if h.MLHTTP == nil {
 		utils.RespondError(c, http.StatusInternalServerError, "ml client is not configured")
 		return
 	}
 
-	mlResp, err := h.ML.Predict(c, mlPayload)
-	if err != nil {
+	var mlResp MLResponse
+	if _, err := httpclient.PostJSON(c, h.MLHTTP, "/predict", mlPayload, &mlResp); err != nil {
 		utils.RespondError(c, http.StatusBadGateway, fmt.Sprintf("ml service error: %v", err))
 		return
 	}
 
-	rawFeatures, _ := json.Marshal(mlPayload)
+	rawFeatures := encodeStoredFeatures(mlPayload)
+	factorsJSON, _ := json.Marshal(mlResp.Factors)
 
 	pred, err := h.Queries.CreatePrediction(c, db.CreatePredictionParams{
 		PatientID:   int64(patientID),
 		Probability: mlResp.Probability,
 		RiskLabel:   mlResp.RiskLevel,
 		RawFeatures: rawFeatures,
+		Factors:     factorsJSON,
 	})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "cannot save prediction")
@@ -118,7 +117,8 @@ func (h *Handler) CreatePrediction(c *gin.Context) {
 }
 
 // GET /patients/:id/predictions
-func (h *Handler) ListPredictions(c *gin.Context) {
+// Lấy danh sách dự đoán của bệnh nhân (theo thời gian giảm dần).
+func (h *Controller) ListPredictions(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -167,4 +167,54 @@ func (h *Handler) ListPredictions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+// buildRecommendation selects up to 3 templates matching risk level (no hardcoded defaults).
+// Returns both response plan and a compact blob (summary + template IDs) to persist.
+func buildRecommendation(ctx context.Context, q *db.Queries, risk string) (RecommendationPlan, []byte, error) {
+	respPlan := RecommendationPlan{
+		Summary: "",
+		Items:   []RecommendationItem{},
+	}
+
+	templates, err := q.ListExerciseTemplates(ctx)
+	if err != nil {
+		return respPlan, nil, err
+	}
+
+	riskLower := strings.ToLower(risk)
+	filtered := make([]db.ExerciseTemplate, 0, len(templates))
+	for _, t := range templates {
+		target := strings.ToLower(t.TargetRiskLevel)
+		if target == "" || target == riskLower {
+			filtered = append(filtered, t)
+		}
+	}
+	if len(filtered) == 0 {
+		filtered = templates
+	}
+
+	maxItems := 3
+	templateIDs := make([]int64, 0, maxItems)
+	for i, t := range filtered {
+		if i >= maxItems {
+			break
+		}
+		templateIDs = append(templateIDs, t.ID)
+		respPlan.Items = append(respPlan.Items, RecommendationItem{
+			Name:        t.Name,
+			Intensity:   t.Intensity,
+			DurationMin: int(t.DurationMin),
+			FreqPerWeek: int(t.FreqPerWeek),
+			Notes:       t.Description,
+		})
+	}
+
+	storePlan := RecommendationPlan{
+		Summary:     respPlan.Summary,
+		TemplateIDs: templateIDs,
+	}
+
+	blob, err := json.Marshal(storePlan)
+	return respPlan, blob, err
 }

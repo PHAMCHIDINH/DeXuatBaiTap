@@ -14,21 +14,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Handler gom các dependency cho module users.
-type Handler struct {
+// Controller gom các dependency cho module users.
+type Controller struct {
 	Queries *db.Queries
 	Tokens  auth.TokenService
 }
 
-func NewHandler(queries *db.Queries, tokens auth.TokenService) *Handler {
-	return &Handler{
+func NewController(queries *db.Queries, tokens auth.TokenService) *Controller {
+	return &Controller{
 		Queries: queries,
 		Tokens:  tokens,
 	}
 }
 
 // POST /users/register
-func (h *Handler) Register(c *gin.Context) {
+func (h *Controller) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "invalid request body")
@@ -87,7 +87,7 @@ func (h *Handler) Register(c *gin.Context) {
 }
 
 // POST /users/login
-func (h *Handler) Login(c *gin.Context) {
+func (h *Controller) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "invalid request body")
@@ -121,7 +121,7 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 // GET /users/me
-func (h *Handler) GetMe(c *gin.Context) {
+func (h *Controller) GetMe(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")

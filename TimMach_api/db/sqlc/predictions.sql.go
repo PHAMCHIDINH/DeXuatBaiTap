@@ -59,10 +59,11 @@ INSERT INTO predictions (
     patient_id,
     probability,
     risk_label,
-    raw_features
+    raw_features,
+    factors
 )
-VALUES ($1, $2, $3, $4)
-RETURNING id, patient_id, probability, risk_label, raw_features, created_at
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, patient_id, probability, risk_label, raw_features, created_at, factors
 `
 
 type CreatePredictionParams struct {
@@ -70,6 +71,7 @@ type CreatePredictionParams struct {
 	Probability float64 `json:"probability"`
 	RiskLabel   string  `json:"risk_label"`
 	RawFeatures []byte  `json:"raw_features"`
+	Factors     []byte  `json:"factors"`
 }
 
 func (q *Queries) CreatePrediction(ctx context.Context, arg CreatePredictionParams) (Prediction, error) {
@@ -78,6 +80,7 @@ func (q *Queries) CreatePrediction(ctx context.Context, arg CreatePredictionPara
 		arg.Probability,
 		arg.RiskLabel,
 		arg.RawFeatures,
+		arg.Factors,
 	)
 	var i Prediction
 	err := row.Scan(
@@ -87,12 +90,13 @@ func (q *Queries) CreatePrediction(ctx context.Context, arg CreatePredictionPara
 		&i.RiskLabel,
 		&i.RawFeatures,
 		&i.CreatedAt,
+		&i.Factors,
 	)
 	return i, err
 }
 
 const getLatestPredictionByPatient = `-- name: GetLatestPredictionByPatient :one
-SELECT id, patient_id, probability, risk_label, raw_features, created_at FROM predictions
+SELECT id, patient_id, probability, risk_label, raw_features, created_at, factors FROM predictions
 WHERE patient_id = $1
 ORDER BY created_at DESC
 LIMIT 1
@@ -108,12 +112,13 @@ func (q *Queries) GetLatestPredictionByPatient(ctx context.Context, patientID in
 		&i.RiskLabel,
 		&i.RawFeatures,
 		&i.CreatedAt,
+		&i.Factors,
 	)
 	return i, err
 }
 
 const getPredictionByID = `-- name: GetPredictionByID :one
-SELECT id, patient_id, probability, risk_label, raw_features, created_at FROM predictions
+SELECT id, patient_id, probability, risk_label, raw_features, created_at, factors FROM predictions
 WHERE id = $1
 LIMIT 1
 `
@@ -128,12 +133,13 @@ func (q *Queries) GetPredictionByID(ctx context.Context, id int64) (Prediction, 
 		&i.RiskLabel,
 		&i.RawFeatures,
 		&i.CreatedAt,
+		&i.Factors,
 	)
 	return i, err
 }
 
 const listPredictionsByPatient = `-- name: ListPredictionsByPatient :many
-SELECT id, patient_id, probability, risk_label, raw_features, created_at FROM predictions
+SELECT id, patient_id, probability, risk_label, raw_features, created_at, factors FROM predictions
 WHERE patient_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -161,6 +167,7 @@ func (q *Queries) ListPredictionsByPatient(ctx context.Context, arg ListPredicti
 			&i.RiskLabel,
 			&i.RawFeatures,
 			&i.CreatedAt,
+			&i.Factors,
 		); err != nil {
 			return nil, err
 		}

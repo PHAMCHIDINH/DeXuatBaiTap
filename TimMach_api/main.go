@@ -9,21 +9,24 @@ import (
 	db "chidinh/db/sqlc"
 	"chidinh/middleware"
 	"chidinh/modules/auth"
+	"chidinh/modules/exercises"
 	"chidinh/modules/patients"
 	"chidinh/modules/predictions"
-	"chidinh/modules/exercises"
+	"chidinh/modules/reports"
 	"chidinh/modules/stats"
 	"chidinh/modules/users"
 	"chidinh/utils"
+	"chidinh/utils/httpclient"
+	"chidinh/utils/mailer"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	//"github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	// Load .env for local dev; ignore error if file is missing.
-	//_ = godotenv.Load(".env")
+	_ = godotenv.Load(".env")
 
 	logger := utils.InitLogger()
 	defer func() { _ = logger.Sync() }()
@@ -46,14 +49,16 @@ func main() {
 	// Services
 	tokenMaker := auth.JWTMaker{Secret: cfg.JWTSecret, TTL: 24 * time.Hour}
 
-	mlClient := predictions.NewRestyMLClient(cfg.MLBaseURL, 10*time.Second)
+	mlHTTPClient := httpclient.NewRestyClient(cfg.MLBaseURL, 10*time.Second)
+	mailerSvc := mailer.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPFrom)
 
 	// Handlers
-	userHandler := users.NewHandler(queries, tokenMaker)
-	patientHandler := patients.NewHandler(queries)
-	predictionHandler := predictions.NewHandler(queries, mlClient)
-	exerciseHandler := exercises.NewHandler(queries)
-	statsHandler := stats.NewHandler(queries)
+	userController := users.NewController(queries, tokenMaker)
+	patientController := patients.NewController(queries)
+	reportController := reports.NewController(queries, mailerSvc, cfg.ReportDefaultEmail)
+	predictionController := predictions.NewController(queries, mlHTTPClient)
+	exerciseController := exercises.NewController(queries)
+	statsController := stats.NewController(queries)
 
 	// Router
 	router := gin.Default()
@@ -61,11 +66,12 @@ func main() {
 	api := router.Group("/api")
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 
-	users.RegisterUserRoutes(api, userHandler, authMiddleware)
-	patients.RegisterPatientRoutes(api, patientHandler, authMiddleware)
-	predictions.RegisterPredictionRoutes(api, predictionHandler, authMiddleware)
-	exercises.RegisterExerciseRoutes(api, exerciseHandler, authMiddleware)
-	stats.RegisterStatsRoutes(api, statsHandler, authMiddleware)
+	users.RegisterUserRoutes(api, userController, authMiddleware)
+	patients.RegisterPatientRoutes(api, patientController, authMiddleware)
+	predictions.RegisterPredictionRoutes(api, predictionController, authMiddleware)
+	exercises.RegisterExerciseRoutes(api, exerciseController, authMiddleware)
+	reports.RegisterReportRoutes(api, reportController, authMiddleware)
+	stats.RegisterStatsRoutes(api, statsController, authMiddleware)
 
 	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Fatalw("server exited", "error", err)

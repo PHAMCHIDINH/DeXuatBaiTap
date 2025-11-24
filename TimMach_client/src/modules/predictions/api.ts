@@ -24,3 +24,8 @@ export async function listPredictions(
   );
   return data.predictions;
 }
+
+export async function getLatestPrediction(patientId: string): Promise<PredictionResponse | null> {
+  const list = await listPredictions(patientId, { limit: 1, offset: 0 });
+  return list[0] ?? null;
+}

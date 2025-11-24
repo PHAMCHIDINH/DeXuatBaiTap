@@ -3,7 +3,7 @@ package exercises
 import "github.com/gin-gonic/gin"
 
 // RegisterExerciseRoutes đăng ký endpoint template và recommendation (cần auth).
-func RegisterExerciseRoutes(r *gin.RouterGroup, h *Handler, auth gin.HandlerFunc) {
+func RegisterExerciseRoutes(r *gin.RouterGroup, h *Controller, auth gin.HandlerFunc) {
 	templates := r.Group("/exercise-templates")
 	if auth != nil {
 		templates.Use(auth)

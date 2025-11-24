@@ -6,7 +6,7 @@ import { Card } from '../../../components/ui/Card';
 import { PredictForm } from '../../predictions/components/PredictForm';
 import { PredictionResultCard } from '../../predictions/components/PredictionResultCard';
 import { RecommendationCard } from '../../predictions/components/RecommendationCard';
-import { createPrediction } from '../../predictions/api';
+import { createPrediction, getLatestPrediction } from '../../predictions/api';
 import { CreatePredictionRequest, CreatePredictionResponse } from '../../predictions/types';
 import { getPatient } from '../api';
 import { PatientResponse } from '../types';
@@ -40,7 +40,36 @@ function PatientPredictPage() {
   });
   const [result, setResult] = useState<CreatePredictionResponse | null>(null);
 
+  const { data: latestPrediction } = useQuery({
+    queryKey: ['latest-prediction', patientId],
+    queryFn: () => getLatestPrediction(patientId),
+    enabled: !!patientId,
+  });
+
   const defaultAge = useMemo(() => ageFromDob(patient?.dob), [patient?.dob]);
+
+  const latestDefaults = useMemo(() => {
+    const raw = latestPrediction?.raw_features as Record<string, any> | undefined;
+    if (!raw) return { age_years: defaultAge };
+    const input = (raw.input as Record<string, number | undefined>) || (raw as Record<string, number | undefined>);
+    const pick = <T extends string>(key: T): number | undefined => {
+      const v = input?.[key];
+      return typeof v === 'number' ? v : undefined;
+    };
+    return {
+      age_years: pick('age_years') ?? defaultAge,
+      gender: pick('gender'),
+      height: pick('height'),
+      weight: pick('weight'),
+      ap_hi: pick('ap_hi'),
+      ap_lo: pick('ap_lo'),
+      cholesterol: pick('cholesterol'),
+      gluc: pick('gluc'),
+      smoke: pick('smoke'),
+      alco: pick('alco'),
+      active: pick('active'),
+    };
+  }, [latestPrediction?.raw_features, defaultAge]);
 
   const handleSubmit = async (values: CreatePredictionRequest) => {
     if (!patientId) return;
@@ -66,7 +95,7 @@ function PatientPredictPage() {
 
       <Card title="Thông tin dự đoán">
         <PredictForm
-          defaultValues={{ age_years: defaultAge }}
+          defaultValues={latestDefaults}
           onSubmit={handleSubmit}
         />
       </Card>

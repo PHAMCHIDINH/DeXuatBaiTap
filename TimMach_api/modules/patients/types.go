@@ -21,13 +21,13 @@ type PatientPredictionSummary struct {
 }
 
 type PatientResponse struct {
-	ID                string                   `json:"id"`
-	UserID            string                   `json:"user_id"`
-	Name              string                   `json:"name"`
-	Gender            int16                    `json:"gender"`
-	Dob               string                   `json:"dob"`
-	CreatedAt         time.Time                `json:"created_at"`
-	LatestPrediction  *PatientPredictionSummary `json:"latest_prediction,omitempty"`
+	ID               string                    `json:"id"`
+	UserID           string                    `json:"user_id"`
+	Name             string                    `json:"name"`
+	Gender           int16                     `json:"gender"`
+	Dob              string                    `json:"dob"`
+	CreatedAt        time.Time                 `json:"created_at"`
+	LatestPrediction *PatientPredictionSummary `json:"latest_prediction,omitempty"`
 }
 
 type ListPatientsResponse struct {

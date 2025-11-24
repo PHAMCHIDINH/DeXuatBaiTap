@@ -3,9 +3,10 @@ INSERT INTO predictions (
     patient_id,
     probability,
     risk_label,
-    raw_features
+    raw_features,
+    factors
 )
-VALUES ($1, $2, $3, $4)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetPredictionByID :one

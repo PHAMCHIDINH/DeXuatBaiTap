@@ -22,9 +22,17 @@ type MLRequest struct {
 
 // MLResponse là output từ FastAPI.
 type MLResponse struct {
-	Probability float64 `json:"probability"`
-	Label       int     `json:"label"`
-	RiskLevel   string  `json:"risk_level"`
+	Probability float64      `json:"probability"`
+	Label       int          `json:"label"`
+	RiskLevel   string       `json:"risk_level"`
+	Factors     []RiskFactor `json:"factors,omitempty"`
+}
+
+type RiskFactor struct {
+	Field        string  `json:"field"`
+	Status       string  `json:"status"`
+	Message      string  `json:"message"`
+	Contribution float64 `json:"contribution,omitempty"`
 }
 
 // CreatePredictionRequest chứa dữ liệu đầu vào client gửi lên (giống MLRequest).
@@ -48,6 +56,7 @@ type PredictionResponse struct {
 	Probability float64         `json:"probability"`
 	RiskLabel   string          `json:"risk_label"`
 	RawFeatures json.RawMessage `json:"raw_features,omitempty"`
+	Factors     []RiskFactor    `json:"factors,omitempty"`
 	CreatedAt   time.Time       `json:"created_at"`
 }
 

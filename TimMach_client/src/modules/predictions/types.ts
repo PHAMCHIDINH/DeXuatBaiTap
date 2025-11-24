@@ -14,6 +14,13 @@ export interface CreatePredictionRequest {
   active: number;
 }
 
+export interface RiskFactor {
+  field: string;
+  status: string;
+  message: string;
+  contribution?: number;
+}
+
 export interface PredictionResponse {
   id: string;
   patient_id: string;
@@ -21,6 +28,7 @@ export interface PredictionResponse {
   risk_label: string;
   model_version?: string;
   raw_features?: Record<string, unknown> | null;
+  factors?: RiskFactor[];
   created_at: string;
 }
 

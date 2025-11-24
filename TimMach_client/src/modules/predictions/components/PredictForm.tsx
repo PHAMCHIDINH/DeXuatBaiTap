@@ -26,6 +26,7 @@ interface Props {
 }
 
 export function PredictForm({ defaultValues, onSubmit }: Props) {
+  // defaultValues lấy từ lần dự đoán gần nhất (nếu có) để tiết kiệm thao tác nhập lại.
   const { register, handleSubmit, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {

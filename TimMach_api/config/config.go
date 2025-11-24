@@ -14,6 +14,13 @@ type Config struct {
 	JWTSecret string `env:"JWT_SECRET" envDefault:"dev-secret"`
 	MLBaseURL string `env:"ML_BASE_URL" envDefault:"http://localhost:8000"`
 	Port      string `env:"PORT" envDefault:"8080"`
+	SMTPHost  string `env:"SMTP_HOST"`
+	SMTPPort  int    `env:"SMTP_PORT" envDefault:"587"`
+	SMTPUser  string `env:"SMTP_USER"`
+	SMTPPass  string `env:"SMTP_PASS"`
+	SMTPFrom  string `env:"SMTP_FROM"`
+	// Nếu thiếu email bệnh nhân, gửi mặc định tới địa chỉ này.
+	ReportDefaultEmail string `env:"REPORT_DEFAULT_EMAIL" envDefault:"chidinhm2@gmail.com"`
 }
 
 // Load đọc biến môi trường vào Config.

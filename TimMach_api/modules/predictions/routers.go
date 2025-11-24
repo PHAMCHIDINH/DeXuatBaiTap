@@ -3,7 +3,7 @@ package predictions
 import "github.com/gin-gonic/gin"
 
 // RegisterPredictionRoutes gắn endpoint predict + history vào group đã có auth.
-func RegisterPredictionRoutes(r *gin.RouterGroup, h *Handler, auth gin.HandlerFunc) {
+func RegisterPredictionRoutes(r *gin.RouterGroup, h *Controller, auth gin.HandlerFunc) {
 	group := r.Group("/patients")
 	if auth != nil {
 		group.Use(auth)

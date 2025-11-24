@@ -13,17 +13,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Handler gom dependency cho module patients.
-type Handler struct {
+// Controller gom dependency cho module patients.
+type Controller struct {
 	Queries *db.Queries
 }
 
-func NewHandler(queries *db.Queries) *Handler {
-	return &Handler{Queries: queries}
+func NewController(queries *db.Queries) *Controller {
+	return &Controller{Queries: queries}
 }
 
 // POST /patients
-func (h *Handler) CreatePatient(c *gin.Context) {
+func (h *Controller) CreatePatient(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -57,7 +57,7 @@ func (h *Handler) CreatePatient(c *gin.Context) {
 }
 
 // GET /patients
-func (h *Handler) ListPatients(c *gin.Context) {
+func (h *Controller) ListPatients(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -98,7 +98,7 @@ func (h *Handler) ListPatients(c *gin.Context) {
 }
 
 // GET /patients/:id
-func (h *Handler) GetPatient(c *gin.Context) {
+func (h *Controller) GetPatient(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -135,7 +135,7 @@ func (h *Handler) GetPatient(c *gin.Context) {
 }
 
 // PUT/PATCH /patients/:id
-func (h *Handler) UpdatePatient(c *gin.Context) {
+func (h *Controller) UpdatePatient(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
@@ -203,7 +203,7 @@ func (h *Handler) UpdatePatient(c *gin.Context) {
 }
 
 // DELETE /patients/:id
-func (h *Handler) DeletePatient(c *gin.Context) {
+func (h *Controller) DeletePatient(c *gin.Context) {
 	userID, ok := utils.UserIDFromContext(c)
 	if !ok {
 		utils.RespondError(c, http.StatusUnauthorized, "missing user in context")
