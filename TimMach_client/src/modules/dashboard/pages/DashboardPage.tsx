@@ -29,12 +29,14 @@ function DashboardPage() {
           <p className="text-sm text-slate-600">Tổng số bệnh nhân</p>
         </Card>
         <Card title="Dự đoán" className="bg-white">
-          <p className="text-3xl font-semibold text-slate-800">—</p>
-          <p className="text-sm text-slate-600">Thêm API /stats để hiển thị</p>
+          <p className="text-3xl font-semibold text-slate-800">
+            {statsLoading ? '—' : stats?.total_predictions ?? 0}
+          </p>
+          <p className="text-sm text-slate-600">Tổng số lượt dự đoán</p>
         </Card>
         <Card title="Hành động nhanh" className="bg-white">
           <div className="flex flex-col gap-2">
-            <Button variant="primary" onClick={() => {}} disabled>
+            <Button variant="default" onClick={() => {}} disabled>
               Dự đoán nhanh (chọn bệnh nhân)
             </Button>
             <Button variant="secondary" onClick={() => {}} disabled>

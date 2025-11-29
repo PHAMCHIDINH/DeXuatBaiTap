@@ -6,6 +6,7 @@ type RiskCount struct {
 }
 
 type StatsResponse struct {
-	TotalPatients int64       `json:"total_patients"`
-	RiskCounts    []RiskCount `json:"risk_counts"`
+	TotalPatients    int64       `json:"total_patients"`
+	TotalPredictions int64       `json:"total_predictions"`
+	RiskCounts       []RiskCount `json:"risk_counts"`
 }

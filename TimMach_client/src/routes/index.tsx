@@ -9,9 +9,9 @@ import { patientRoutes } from '../modules/patients/routes';
 import { userRoutes } from '../modules/users/routes';
 
 function ProtectedShell() {
-  const { token, loading } = useAuth();
+  const { token, authenticated, loading } = useAuth();
   if (loading) return <div className="p-8 text-sm text-slate-600">Đang tải...</div>;
-  if (!token) return <Navigate to="/login" replace />;
+  if (!authenticated || !token) return <Navigate to="/login" replace />;
   return <App />;
 }
 

@@ -10,14 +10,25 @@ interface Props {
 
 export function Card({ title, action, className, children }: Props) {
   return (
-    <div className={cn('rounded-xl border border-slate-200 bg-white p-4 shadow-sm', className)}>
+    <div
+      className={cn(
+        'rounded-lg border bg-card text-card-foreground shadow-sm',
+        className,
+      )}
+    >
       {(title || action) && (
-        <div className="mb-3 flex items-center justify-between gap-3">
-          {title && <h3 className="text-sm font-semibold text-slate-800">{title}</h3>}
-          {action}
+        <div className="flex flex-col space-y-1.5 p-6 pb-4">
+          <div className="flex items-center justify-between">
+            {title && (
+              <h3 className="text-2xl font-semibold leading-none tracking-tight">
+                {title}
+              </h3>
+            )}
+            {action}
+          </div>
         </div>
       )}
-      {children}
+      <div className={cn('p-6 pt-0', !title && !action && 'p-6')}>{children}</div>
     </div>
   );
 }

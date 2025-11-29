@@ -9,32 +9,80 @@ import (
 	"context"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, email, password_hash)
-VALUES ($1, $2, $3)
-RETURNING id, email, password_hash, created_at
+const attachKeycloakID = `-- name: AttachKeycloakID :one
+UPDATE users
+SET keycloak_id = $2
+WHERE id = $1
+RETURNING id, email, created_at, keycloak_id
 `
 
-type CreateUserParams struct {
-	ID           string `json:"id"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
+type AttachKeycloakIDParams struct {
+	ID         string  `json:"id"`
+	KeycloakID *string `json:"keycloak_id"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email, arg.PasswordHash)
+func (q *Queries) AttachKeycloakID(ctx context.Context, arg AttachKeycloakIDParams) (User, error) {
+	row := q.db.QueryRow(ctx, attachKeycloakID, arg.ID, arg.KeycloakID)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.KeycloakID,
+	)
+	return i, err
+}
+
+const createKeycloakUser = `-- name: CreateKeycloakUser :one
+INSERT INTO users (id, email, keycloak_id)
+VALUES ($1, $2, $3)
+RETURNING id, email, created_at, keycloak_id
+`
+
+type CreateKeycloakUserParams struct {
+	ID         string  `json:"id"`
+	Email      string  `json:"email"`
+	KeycloakID *string `json:"keycloak_id"`
+}
+
+func (q *Queries) CreateKeycloakUser(ctx context.Context, arg CreateKeycloakUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createKeycloakUser, arg.ID, arg.Email, arg.KeycloakID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.KeycloakID,
+	)
+	return i, err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (id, email, keycloak_id)
+VALUES ($1, $2, $3)
+RETURNING id, email, created_at, keycloak_id
+`
+
+type CreateUserParams struct {
+	ID         string  `json:"id"`
+	Email      string  `json:"email"`
+	KeycloakID *string `json:"keycloak_id"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email, arg.KeycloakID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.KeycloakID,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, created_at FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 WHERE email = $1
 LIMIT 1
 `
@@ -45,14 +93,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.KeycloakID,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, created_at FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -63,14 +111,32 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
-		&i.PasswordHash,
 		&i.CreatedAt,
+		&i.KeycloakID,
+	)
+	return i, err
+}
+
+const getUserByKeycloakID = `-- name: GetUserByKeycloakID :one
+SELECT id, email, created_at, keycloak_id FROM users
+WHERE keycloak_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByKeycloakID(ctx context.Context, keycloakID *string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByKeycloakID, keycloakID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.KeycloakID,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, password_hash, created_at FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
 `
@@ -92,8 +158,8 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,
-			&i.PasswordHash,
 			&i.CreatedAt,
+			&i.KeycloakID,
 		); err != nil {
 			return nil, err
 		}

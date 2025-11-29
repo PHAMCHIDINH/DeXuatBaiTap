@@ -21,7 +21,8 @@ import (
 	"chidinh/utils"
 	"chidinh/utils/mailer"
 
-	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/chromedp"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -29,16 +30,14 @@ import (
 const reportStorageDir = "tmp/reports"
 
 type Controller struct {
-	Queries            *db.Queries
-	Mailer             *mailer.Mailer
-	DefaultReportEmail string
+	Queries *db.Queries
+	Mailer  *mailer.Mailer
 }
 
-func NewController(queries *db.Queries, mailerSvc *mailer.Mailer, defaultReportEmail string) *Controller {
+func NewController(queries *db.Queries, mailerSvc *mailer.Mailer) *Controller {
 	return &Controller{
-		Queries:            queries,
-		Mailer:             mailerSvc,
-		DefaultReportEmail: defaultReportEmail,
+		Queries: queries,
+		Mailer:  mailerSvc,
 	}
 }
 
@@ -150,9 +149,6 @@ func (h *Controller) SendPatientReportEmail(c *gin.Context) {
 	}
 
 	email := strings.TrimSpace(req.Email)
-	if email == "" {
-		email = h.DefaultReportEmail
-	}
 	if email == "" {
 		utils.RespondError(c, http.StatusBadRequest, "email is required")
 		return
@@ -550,7 +546,7 @@ func (h *Controller) DeleteReport(c *gin.Context) {
 
 // buildPatientReportPDF tạo file PDF báo cáo từ HTML template.
 // Trả về: (filename, pdfBytes, error)
-// Sử dụng wkhtmltopdf để convert HTML → PDF.
+// Sử dụng chromedp để convert HTML → PDF.
 func (h *Controller) buildPatientReportPDF(ctx context.Context, userID string, patientID int64) (string, []byte, error) {
 	vm, err := buildPatientReportViewModel(ctx, h.Queries, userID, patientID)
 	if err != nil {
@@ -568,25 +564,43 @@ func (h *Controller) buildPatientReportPDF(ctx context.Context, userID string, p
 		return "", nil, fmt.Errorf("cannot render template: %w", err)
 	}
 
-	pdfg, err := wkhtmltopdf.NewPDFGenerator()
-	if err != nil {
-		return "", nil, fmt.Errorf("cannot init pdf generator: %w", err)
-	}
-	pdfg.AddPage(wkhtmltopdf.NewPageReader(bytes.NewReader(htmlBuf.Bytes())))
-	pdfg.Orientation.Set(wkhtmltopdf.OrientationPortrait)
-	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
-	pdfg.Dpi.Set(150)
-	pdfg.MarginLeft.Set(10)
-	pdfg.MarginRight.Set(10)
-	pdfg.MarginTop.Set(10)
-	pdfg.MarginBottom.Set(10)
+	// create context
+	ctx, cancel := chromedp.NewContext(ctx)
+	defer cancel()
 
-	if err := pdfg.Create(); err != nil {
+	var pdfBuf []byte
+	// capture entire browser viewport, returning png with quality=90
+	err = chromedp.Run(ctx,
+		chromedp.Navigate("about:blank"),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			frameTree, err := page.GetFrameTree().Do(ctx)
+			if err != nil {
+				return err
+			}
+			return page.SetDocumentContent(frameTree.Frame.ID, htmlBuf.String()).Do(ctx)
+		}),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			buf, _, err := page.PrintToPDF().
+				WithPrintBackground(true).
+				WithMarginTop(0.4).
+				WithMarginBottom(0.4).
+				WithMarginLeft(0.4).
+				WithMarginRight(0.4).
+				Do(ctx)
+			if err != nil {
+				return err
+			}
+			pdfBuf = buf
+			return nil
+		}),
+	)
+
+	if err != nil {
 		return "", nil, fmt.Errorf("cannot generate pdf: %w", err)
 	}
 
 	filename := fmt.Sprintf("patient_%d_report.pdf", patientID)
-	return filename, pdfg.Bytes(), nil
+	return filename, pdfBuf, nil
 }
 
 // buildPatientReportViewModel tập hợp dữ liệu cho báo cáo PDF.

@@ -19,8 +19,8 @@ type Config struct {
 	SMTPUser  string `env:"SMTP_USER"`
 	SMTPPass  string `env:"SMTP_PASS"`
 	SMTPFrom  string `env:"SMTP_FROM"`
-	// Nếu thiếu email bệnh nhân, gửi mặc định tới địa chỉ này.
-	ReportDefaultEmail string `env:"REPORT_DEFAULT_EMAIL" envDefault:"chidinhm2@gmail.com"`
+	KeycloakClientSecret  string `env:"KEYCLOAK_CLIENT_SECRET"`
+	KeycloakSkipTLSVerify bool   `env:"KEYCLOAK_SKIP_TLS_VERIFY" envDefault:"false"`
 }
 
 // Load đọc biến môi trường vào Config.

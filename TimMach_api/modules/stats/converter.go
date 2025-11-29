@@ -12,25 +12,30 @@ type RiskSummary struct {
 	Items []RiskCount
 }
 
-func buildStatsResponse(total int64, rows []db.CountLatestRiskByUserRow) StatsResponse {
+func buildStatsResponse(
+	totalPatients int64,
+	totalPredictions int64,
+	distRows []db.GetRiskDistributionRow,
+) StatsResponse {
 	counts := map[string]int64{
 		"low":    0,
 		"medium": 0,
 		"high":   0,
-		"none":   0,
 	}
-	for _, r := range rows {
+	for _, r := range distRows {
 		label := strings.ToLower(r.RiskLabel)
-		counts[label] += r.Count
+		if _, ok := counts[label]; ok {
+			counts[label] = r.Count
+		}
 	}
 
 	return StatsResponse{
-		TotalPatients: total,
+		TotalPatients:    totalPatients,
+		TotalPredictions: totalPredictions,
 		RiskCounts: []RiskCount{
 			{RiskLabel: "high", Count: counts["high"]},
 			{RiskLabel: "medium", Count: counts["medium"]},
 			{RiskLabel: "low", Count: counts["low"]},
-			{RiskLabel: "none", Count: counts["none"]},
 		},
 	}
 }

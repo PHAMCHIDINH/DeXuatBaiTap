@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"gopkg.in/gomail.v2"
 )
@@ -27,7 +28,8 @@ var ErrNotConfigured = errors.New("mailer is not configured")
 // New creates a Mailer. If host/user/pass are empty, the mailer is disabled
 // and Send will return ErrNotConfigured.
 func New(host string, port int, username, password, from string) *Mailer {
-	if host == "" || username == "" || password == "" {
+	// Treat placeholder or empty configuration as disabled to avoid dialing dummy hosts in dev.
+	if host == "" || strings.Contains(host, "example.com") || username == "" || password == "" {
 		return &Mailer{enabled: false}
 	}
 	if from == "" {

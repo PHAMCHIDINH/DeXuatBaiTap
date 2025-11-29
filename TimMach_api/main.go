@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"chidinh/config"
 	db "chidinh/db/sqlc"
 	"chidinh/middleware"
-	"chidinh/modules/auth"
 	"chidinh/modules/exercises"
 	"chidinh/modules/patients"
 	"chidinh/modules/predictions"
@@ -32,8 +30,6 @@ func main() {
 	defer func() { _ = logger.Sync() }()
 
 	cfg, err := config.Load()
-	fmt.Println("JWT Secret:", cfg.JWTSecret)
-	fmt.Println("DB URL:", cfg.DBURL)
 	if err != nil {
 		logger.Fatalw("cannot parse env", "error", err)
 	}
@@ -47,15 +43,13 @@ func main() {
 	queries := db.New(pool)
 
 	// Services
-	tokenMaker := auth.JWTMaker{Secret: cfg.JWTSecret, TTL: 24 * time.Hour}
-
 	mlHTTPClient := httpclient.NewRestyClient(cfg.MLBaseURL, 10*time.Second)
 	mailerSvc := mailer.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPFrom)
 
 	// Handlers
-	userController := users.NewController(queries, tokenMaker)
+	userController := users.NewController(queries)
 	patientController := patients.NewController(queries)
-	reportController := reports.NewController(queries, mailerSvc, cfg.ReportDefaultEmail)
+	reportController := reports.NewController(queries, mailerSvc)
 	predictionController := predictions.NewController(queries, mlHTTPClient)
 	exerciseController := exercises.NewController(queries)
 	statsController := stats.NewController(queries)
@@ -64,14 +58,14 @@ func main() {
 	router := gin.Default()
 	router.Use(cfg.CORSMiddleware())
 	api := router.Group("/api")
-	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+	api.Use(middleware.DevKeycloakMapper(queries))
 
-	users.RegisterUserRoutes(api, userController, authMiddleware)
-	patients.RegisterPatientRoutes(api, patientController, authMiddleware)
-	predictions.RegisterPredictionRoutes(api, predictionController, authMiddleware)
-	exercises.RegisterExerciseRoutes(api, exerciseController, authMiddleware)
-	reports.RegisterReportRoutes(api, reportController, authMiddleware)
-	stats.RegisterStatsRoutes(api, statsController, authMiddleware)
+	users.RegisterUserRoutes(api, userController)
+	patients.RegisterPatientRoutes(api, patientController)
+	predictions.RegisterPredictionRoutes(api, predictionController)
+	exercises.RegisterExerciseRoutes(api, exerciseController)
+	reports.RegisterReportRoutes(api, reportController)
+	stats.RegisterStatsRoutes(api, statsController)
 
 	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Fatalw("server exited", "error", err)

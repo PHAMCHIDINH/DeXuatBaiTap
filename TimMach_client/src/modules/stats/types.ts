@@ -5,5 +5,6 @@ export interface StatsRiskCount {
 
 export interface StatsResponse {
   total_patients: number;
+  total_predictions: number;
   risk_counts: StatsRiskCount[];
 }

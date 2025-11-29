@@ -1,16 +1,12 @@
 # Module `users`
 
-Quản lý tài khoản và xác thực (JWT).
+Quản lý thông tin user và trả về profile sau khi đã xác thực qua Keycloak.
 
 ## Routes
-- `POST /api/users/register` (public)
-- `POST /api/users/login` (public)
-- `GET /api/users/me` (cần Auth middleware)
+- `GET /api/users/me` (cần Keycloak middleware)
 
 ## Request/Response
-- Register: body `{"email","password"}` → 201 `{"user": UserResponse,"token":string}`
-- Login: body `{"email","password"}` → 200 `{"access_token":string,"user":UserResponse}`
-- Me: header `Authorization: Bearer <jwt>` → 200 `UserResponse`
+- Me: header `Authorization: Bearer <Keycloak access token>` → 200 `UserResponse`
 
 `UserResponse`:
 ```json
@@ -18,14 +14,11 @@ Quản lý tài khoản và xác thực (JWT).
 ```
 
 ## Logic (controllers)
-- `Register`: validate email/password → check trùng email (sqlc `GetUserByEmail`) → hash bcrypt → `CreateUser` → tạo JWT nếu có TokenService.
-- `Login`: tìm user theo email → bcrypt check password → tạo JWT.
-- `GetMe`: lấy `userID` từ context (middleware đặt vào) → `GetUserByID`.
+- `GetMe`: lấy `userID` từ context (Keycloak middleware đặt vào sau khi verify token và map user) → `GetUserByID`.
 
 ## Phụ thuộc
-- DB queries: `CreateUser`, `GetUserByEmail`, `GetUserByID` (từ `db/sqlc`).
-- TokenService (mặc định `JWTMaker` HMAC).
-- Middleware: yêu cầu Auth cho `/me`.
+- DB queries: `GetUserByID` (từ `db/sqlc`).
+- Middleware: Keycloak middleware bắt buộc cho `/me`.
 
 ## Lỗi chuẩn (JSON)
-`{"error": "invalid request body"}`, `{"error": "invalid credentials"}`, `{"error": "missing token"}`, ...
+`{"error": "missing token"}`, `{"error": "invalid token"}`, `{"error": "cannot fetch user"}`...

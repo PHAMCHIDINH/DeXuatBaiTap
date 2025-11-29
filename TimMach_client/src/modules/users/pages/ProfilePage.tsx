@@ -14,9 +14,9 @@ function ProfilePage() {
           <p className="font-medium text-slate-900">{user.email}</p>
           <p className="text-slate-600">Tạo lúc</p>
           <p className="font-medium text-slate-900">{formatDate(user.created_at)}</p>
-          <Button variant="secondary" size="sm" onClick={refreshProfile}>
-            Làm mới
-          </Button>
+        <Button variant="secondary" size="sm" onClick={() => refreshProfile(true)}>
+          Làm mới
+        </Button>
         </div>
       ) : (
         <p className="text-sm text-slate-600">Không có thông tin user.</p>

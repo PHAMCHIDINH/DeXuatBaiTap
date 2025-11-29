@@ -8,8 +8,8 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 
 const schema = z.object({
-  email: z.string().email("không đúng định dạng email"),
-  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+  username: z.string().min(1, 'Không được bỏ trống'),
+  password: z.string().min(1, 'Không được bỏ trống'),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -24,7 +24,7 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', password: '' },
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -34,16 +34,18 @@ export function LoginForm() {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setError('Đăng nhập thất bại. Vui lòng kiểm tra email/password.');
+      const message =
+        err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra thông tin.';
+      setError(message);
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-1">
-        <label className="text-sm font-medium text-slate-700">Email</label>
-        <Input type="email" placeholder="you@example.com" {...register('email')} />
-        {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+        <label className="text-sm font-medium text-slate-700">Email / Username</label>
+        <Input type="text" placeholder="you@example.com" {...register('username')} />
+        {errors.username && <p className="text-xs text-red-600">{errors.username.message}</p>}
       </div>
       <div className="space-y-1">
         <label className="text-sm font-medium text-slate-700">Password</label>

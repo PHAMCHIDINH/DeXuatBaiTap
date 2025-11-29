@@ -7,6 +7,7 @@ import (
 	"chidinh/utils"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 )
 
 // Controller gom dependencies cho module thống kê.
@@ -26,17 +27,34 @@ func (h *Controller) GetStats(c *gin.Context) {
 		return
 	}
 
-	total, err := h.Queries.CountPatientsByUser(c, userID)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "cannot count patients")
+	var totalPatients int64
+	var totalPredictions int64
+	var riskDist []db.GetRiskDistributionRow
+
+	g, ctx := errgroup.WithContext(c)
+
+	g.Go(func() error {
+		var err error
+		totalPatients, err = h.Queries.GetTotalPatients(ctx, userID)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		totalPredictions, err = h.Queries.GetTotalPredictions(ctx, userID)
+		return err
+	})
+
+	g.Go(func() error {
+		var err error
+		riskDist, err = h.Queries.GetRiskDistribution(ctx, userID)
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "cannot query stats")
 		return
 	}
 
-	rows, err := h.Queries.CountLatestRiskByUser(c, userID)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "cannot count risk groups")
-		return
-	}
-
-	c.JSON(http.StatusOK, buildStatsResponse(total, rows))
+	c.JSON(http.StatusOK, buildStatsResponse(totalPatients, totalPredictions, riskDist))
 }

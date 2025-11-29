@@ -1,20 +1,36 @@
 -- name: CreateUser :one
-INSERT INTO users (id, email, password_hash)
+INSERT INTO users (id, email, keycloak_id)
 VALUES ($1, $2, $3)
-RETURNING *;
+RETURNING id, email, created_at, keycloak_id;
+
+-- name: CreateKeycloakUser :one
+INSERT INTO users (id, email, keycloak_id)
+VALUES ($1, $2, $3)
+RETURNING id, email, created_at, keycloak_id;
+
+-- name: AttachKeycloakID :one
+UPDATE users
+SET keycloak_id = $2
+WHERE id = $1
+RETURNING id, email, created_at, keycloak_id;
 
 -- name: GetUserByID :one
-SELECT * FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 WHERE id = $1
 LIMIT 1;
 
 -- name: GetUserByEmail :one
-SELECT * FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 WHERE email = $1
 LIMIT 1;
 
+-- name: GetUserByKeycloakID :one
+SELECT id, email, created_at, keycloak_id FROM users
+WHERE keycloak_id = $1
+LIMIT 1;
+
 -- name: ListUsers :many
-SELECT * FROM users
+SELECT id, email, created_at, keycloak_id FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
